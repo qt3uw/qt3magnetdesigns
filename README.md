@@ -7,11 +7,10 @@ This package simulates magnetic fields using the [magpylib](https://magpylib.rea
 These instructions assume you've installed [anaconda](https://www.anaconda.com/).  I also recommend the [pycharm community](https://www.jetbrains.com/pycharm/download) IDE for editing and debugging python code.  The instructions also assume that you know how to use the [command line "cd" command to change directory](https://www.digitalcitizen.life/command-prompt-how-use-basic-commands/).
 
 Open a terminal (git bash if using windows, terminal on mac or linux). Navigate to the parent folder where you store your git repositories using the 'cd' command in the terminal.
-Once there clone the repository.
+Once there clone the repository and cd into it.
 ```
-git clone https://github.com/gadamc/qt3-utils
-cd qt3-utils
-python -m pip install .
+git clone https://github.com/qt3uw/qt3magnetdesigns.git
+cd qt3magnetdesigns
 ```
 You can use the .yml file contained in the repository to set up an anaconda environment with the required packages using the following command (if you are in windows, you will need to switch from the git bash terminal to the "anaconda prompt" terminal that can be found in start menu if you've installed anaconda, on a mac or linux you can use the good old terminal for everything):
 ```
