@@ -1,0 +1,13 @@
+name: qt3magnetdesigns
+
+channels:
+  - default
+  - conda-forge
+
+dependencies:
+  - python>3.9
+  - numpy
+  - jupyter
+  - scipy
+  - magpylib
+  - plotly
