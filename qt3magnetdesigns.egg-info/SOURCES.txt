@@ -1,0 +1,7 @@
+LICENSE
+README.md
+setup.py
+qt3magnetdesigns.egg-info/PKG-INFO
+qt3magnetdesigns.egg-info/SOURCES.txt
+qt3magnetdesigns.egg-info/dependency_links.txt
+qt3magnetdesigns.egg-info/top_level.txt
