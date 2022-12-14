@@ -34,7 +34,7 @@ where python
 ```
 On my windows machine in an anaconda prompt this command returns the following (the command itself is the top line):
 ```
-(qt3magnetdesigns) C:\Users\mfpars\repos>where python.exe
+(qt3magnetdesigns) C:\Users\mfpars\repos>where python
 C:\Users\mfpars\anaconda3\envs\qt3magnetdesigns\python.exe
 C:\Users\mfpars\AppData\Local\Microsoft\WindowsApps\python.exe
 ```
