@@ -14,11 +14,11 @@ cd qt3magnetdesigns
 ```
 You can use the .yml file contained in the repository to set up an anaconda environment with the required packages using the following command (if you are in windows, you will need to switch from the git bash terminal to the "anaconda prompt" terminal that can be found in start menu if you've installed anaconda, on a mac or linux you can use the good old terminal for everything):
 ```
-conda env create -f qt3magneticdesigns.yml
+conda env create -f qt3magnetdesigns.yml
 ```
 This creates an anaconda environment called "qt3magneticdesigns", which contains all of the dependencies of this repository.  You can activate that environment with the following command:
 ```
-conda activate qt3magneticdesigns
+conda activate qt3magnetdesigns
 ```
 Once activated your terminal will usually show (qt3magneticdesigns) to the left of the command prompt.
 
@@ -34,7 +34,7 @@ where python
 ```
 On my windows machine in an anaconda prompt this command returns the following (the command itself is the top line):
 ```
-(qt3magnetdesigns) C:\Users\mfpars\repos>where python.exe
+(qt3magnetdesigns) C:\Users\mfpars\repos>where python
 C:\Users\mfpars\anaconda3\envs\qt3magnetdesigns\python.exe
 C:\Users\mfpars\AppData\Local\Microsoft\WindowsApps\python.exe
 ```
