@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 import magpylib as magpy
 import matplotlib.pyplot as plt
@@ -20,15 +20,20 @@ class QdpWillowParameters:
     """
     cryo_magnet_diameter: float = 2.0
     cryo_magnet_height: float = 1.0
-    cryo_magnet_center_xyz: np.ndarray = np.array([-1.3, 0, -2.09])
-    cryo_magnet_remanence: np.ndarray = np.array([0, 0, 1050])
+    # cryo_magnet_center_xyz: np.ndarray = np.array([-1.3, 0, -2.09])
+    cryo_magnet_center_xyz: tuple = (-1.3, 0, -2.09)
+    # cryo_magnet_remanence: np.ndarray = np.array([0, 0, 1050])
+    cryo_magnet_remanence: tuple = (0, 0, 1050)
 
     ext_magnet_diameter: float = 25.4
     ext_magnet_height: float = 25.4
-    ext_magnet_center_xyz: np.ndarray = np.array([-51, 0, 0])
-    ext_magnet_remanence: np.ndarray = np.array([0, 0, 1480])
+    # ext_magnet_center_xyz: np.ndarray = np.array([-51, 0, 0])
+    ext_magnet_center_xyz: tuple = (-51, 0, 0)
+    # ext_magnet_remanence: np.ndarray = np.array([0, 0, 1480])
+    ext_magnet_remanence: tuple = (0, 0, 1480)
 
-    sample_center: np.ndarray = np.array([0, 0, 0])
+    # sample_center: np.ndarray = np.array([0, 0, 0])
+    sample_center: tuple = (0, 0, 0)
 
 
 def get_default_qdp_parameters():
