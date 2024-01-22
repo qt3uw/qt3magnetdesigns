@@ -8,7 +8,7 @@ import numpy as np
 class AqpBookerParameters:
     """
     Contains the default parameters for QT3 atomic quantum processor magnet geometry
-    Base units for magpylib are millimeters, millitesla, degree, and Ampere
+    Base units for magpylib are millimeters, milliteslas, degrees, and Amperes
     """
 
     # assume x, y, z coils are all round, may consider racetrack coil later
@@ -31,44 +31,58 @@ class AqpBookerParameters:
     #        ◟___________◞
     # 
 
-    # x_axis_coil_diameter_a: float = 1
-    # x_axis_coil_diameter_b: float = 1
 
     x_axis_coil_y_length: float = 0
     x_axis_coil_z_length: float = 100
-    x_axis_coil_corner_radius: float = 13.5
-    x_axis_coil_winding_number: int = 72
-    x_axix_coil_thickness: float = 10
-    x_axis_coil_current_a: float = -0.78
-    x_axis_coil_current_b: float = 0.78
-    x_axis_coil_center_a: tuple = (20, 0, 0)
-    x_axis_coil_center_b: tuple = (-20, 0, 0)
+    x_axis_coil_corner_radius: float = 18
+    x_axis_coil_winding_number: int = 300
+    x_axis_coil_current_a: float = -1.5
+    x_axis_coil_current_b: float = 1.5
+    x_axis_coil_center_a: tuple = (50, 0, 0)
+    x_axis_coil_center_b: tuple = (-50, 0, 0)
 
-    # y_axis_coil_diameter_a: float = 0
-    # y_axis_coil_diameter_b: float = 0
+
     y_axis_coil_x_length: float = 0
     y_axis_coil_z_length: float = 100
-    y_axis_coil_corner_radius: float = 13.5
-    y_axis_coil_winding_number: int = 72
-    y_axis_coil_thickness: float = 10
-    y_axis_coil_current_a: float = -0.78
-    y_axis_coil_current_b: float = 0.78
-    y_axis_coil_center_a: tuple = (0, 20, 0)
-    y_axis_coil_center_b: tuple = (0, -20, 0)
+    y_axis_coil_corner_radius: float = 18
+    y_axis_coil_winding_number: int = 300
+    y_axis_coil_current_a: float = -1.5
+    y_axis_coil_current_b: float = 1.5
+    y_axis_coil_center_a: tuple = (0, 50, 0)
+    y_axis_coil_center_b: tuple = (0, -50, 0)
 
-    # z_axis_coil_diameter_a: float = 0
-    # z_axis_coil_diameter_b: float = 0
+    # z axis coil not used for 2D MOT
     z_axis_coil_x_length: float = 27
     z_axis_coil_y_length: float = 27
     z_axis_coil_corner_radius: float = 10
     z_axis_coil_winding_number: int = 1
-    z_axis_coil_thickness: float = 10
     z_axis_coil_current_a: float = -1*0
     z_axis_coil_current_b: float = 0
-    z_axis_coil_center_a: tuple = (0, 0, 65)
-    z_axis_coil_center_b: tuple = (0, 0, -65)
+    z_axis_coil_center_a: tuple = (0, 0, 80)
+    z_axis_coil_center_b: tuple = (0, 0, -80)
 
     sample_center: tuple = (0, 0, 0)
+
+    x_wire_length: float = ((x_axis_coil_y_length + x_axis_coil_z_length)*2 + x_axis_coil_corner_radius*2*np.pi) * x_axis_coil_winding_number /1000 # meters
+    y_wire_length: float = ((y_axis_coil_x_length + y_axis_coil_z_length)*2 + y_axis_coil_corner_radius*2*np.pi) * y_axis_coil_winding_number /1000 # meters
+    z_wire_length: float = ((z_axis_coil_x_length + z_axis_coil_y_length)*2 + z_axis_coil_corner_radius*2*np.pi) * z_axis_coil_winding_number /1000 # meters
+
+    wire_selection: int = 25 # AWG
+    wire_diameter: float = 0.127 * (92 ** ((36 - wire_selection)/39)) # mm
+    # R = rho * L / A
+    x_wire_resistance: float = (1.7241*10**(-8)) * x_wire_length / (np.pi*((wire_diameter/2/1000) ** 2))  # ohm
+    y_wire_resistance: float = (1.7241*10**(-8)) * y_wire_length / (np.pi*((wire_diameter/2/1000) ** 2))  # ohm
+    z_wire_resistance: float = (1.7241*10**(-8)) * z_wire_length / (np.pi*((wire_diameter/2/1000) ** 2))  # ohm
+
+    # winding_layer_number: int = 3
+    # x_axis_coil_thickness: float = x_axis_coil_winding_number * wire_diameter / winding_layer_number
+    # y_axis_coil_thickness: float = y_axis_coil_winding_number * wire_diameter / winding_layer_number
+    # z_axis_coil_thickness: float = z_axis_coil_winding_number * wire_diameter / winding_layer_number
+
+    # using fixed thickness
+    x_axis_coil_thickness: float = 20
+    y_axis_coil_thickness: float = 20
+    z_axis_coil_thickness: float = 20
 
 def get_default_aqp_parameters():
     p = AqpBookerParameters()
@@ -86,7 +100,7 @@ def build_magpy_collection(p: AqpBookerParameters = get_default_aqp_parameters()
 
     # sample_number = 1000
     # ts = np.linspace(-1 * p.x_axis_coil_winding_number/2, p.x_axis_coil_winding_number/2, sample_number)
-    x_vertices = shape_racetrack(p.x_axis_coil_winding_number, p.x_axis_coil_corner_radius, p.x_axis_coil_y_length, p.x_axis_coil_z_length, p.x_axix_coil_thickness) 
+    x_vertices = shape_racetrack(p.x_axis_coil_winding_number, p.x_axis_coil_corner_radius, p.x_axis_coil_y_length, p.x_axis_coil_z_length, p.x_axis_coil_thickness) 
 
     x_axis_coil_a = magpy.current.Line(current=p.x_axis_coil_current_a, vertices=x_vertices, position=p.x_axis_coil_center_a, style_label='x_axis_coil_a', style_color = 'r')
     x_axis_coil_b = magpy.current.Line(current=p.x_axis_coil_current_b, vertices=x_vertices, position=p.x_axis_coil_center_b, style_label='x_axis_coil_b', style_color = 'g')
@@ -179,14 +193,15 @@ def get_gradient(coll: magpy.Collection, location: np.ndarray, direction: str) -
 
 def heat_generation(p: AqpBookerParameters = get_default_aqp_parameters()):
     # heat map for winding number and current
-    winding_min = 1
-    winding_max = 100
-    current_min = 0
-    current_max = 2
-    sample_points = 100
+    winding_min = 50
+    winding_max = 300
+    current_min = 1
+    current_max = 3
+    sample_points = 50
     winding_number = np.linspace(winding_min, winding_max, sample_points)
     current = np.linspace(current_min, current_max, sample_points)
     data = np.zeros((len(winding_number), len(current)))
+    data_heat = np.zeros((len(winding_number), len(current)))
     for i in range(len(winding_number)):
         for j in range(len(current)):
             print("calculating: ", i, ", ", j)
@@ -198,9 +213,20 @@ def heat_generation(p: AqpBookerParameters = get_default_aqp_parameters()):
             p.y_axis_coil_current_b = current[j]
             coll = build_magpy_collection(p)
             data[i][j] = get_gradient(coll, np.asarray(p.sample_center), 'x')
+            if np.abs(data[i][j]) > 15:
+                x_heat_production = p.x_wire_resistance * p.x_axis_coil_current_a**2
+                wire_weight = p.x_wire_length * np.pi * ((p.wire_diameter/2000) ** 2) * 8941
+                delta_temp = x_heat_production * 1 / 0.385 / (wire_weight * 1000)
+                data_heat[i][j] = delta_temp
     # export the data to csv
+    
     np.savetxt("data.csv", data, delimiter=",")
+    np.savetxt("data_heat.csv", data_heat, delimiter=",")
+    plt.subplot(1, 2, 1)
     plt.imshow(data, cmap='hot', interpolation='nearest', extent=[current_min, current_max, winding_max, winding_min], aspect='auto')
+    plt.colorbar()
+    plt.subplot(1, 2, 2)
+    plt.imshow(data_heat, cmap='hot', interpolation='nearest', extent=[current_min, current_max, winding_max, winding_min], aspect='auto')
     plt.colorbar()
     plt.show()
 
@@ -244,7 +270,27 @@ def B_field_plot(p: AqpBookerParameters = get_default_aqp_parameters()):
     plt.show()
 
 
+def resistance_sim(p:AqpBookerParameters = get_default_aqp_parameters()):
+    print("coil diameter is", p.wire_diameter, "mm")
+    print("coil thickness is", p.x_axis_coil_thickness, "mm")
+    print("x coil resistance is", p.x_wire_resistance, "ohm")
+    print("y coil resistance is", p.y_wire_resistance, "ohm")
+    print("z coil resistance is", p.z_wire_resistance, "ohm")
+    print("x coil wire length is", p.x_wire_length, "m")
+
+def heat_sim(p:AqpBookerParameters = get_default_aqp_parameters()):
+    x_heat_production = p.x_wire_resistance * p.x_axis_coil_current_a**2
+    print("x coil heat production is", p.x_wire_resistance * p.x_axis_coil_current_a**2, "W")
+    print("y coil heat production is", p.y_wire_resistance * p.y_axis_coil_current_a**2, "W")
+    print("z coil heat production is", p.z_wire_resistance * p.z_axis_coil_current_a**2, "W")
+    wire_weight = p.x_wire_length * np.pi * ((p.wire_diameter/2000) ** 2) * 8941 # kg
+    print("x coil wire weight is", wire_weight, "kg")
+    delta_temp = x_heat_production * 1 / 0.385 / (wire_weight * 1000) # assume only 1 second on time
+    print("x coil temperature rise is", delta_temp, "K")
+
 if __name__ == "__main__":
+    resistance_sim()
+    heat_sim()
     simulate_mag_field()
     # heat_generation()
     # B_field_plot()
