@@ -33,23 +33,23 @@ class AqpBookerParameters:
 
 
     x_axis_coil_y_length: float = 0
-    x_axis_coil_z_length: float = 100
+    x_axis_coil_z_length: float = 60
     x_axis_coil_corner_radius: float = 18
-    x_axis_coil_winding_number: int = 300
+    x_axis_coil_winding_number: int = 200
     x_axis_coil_current_a: float = -1.5
     x_axis_coil_current_b: float = 1.5
-    x_axis_coil_center_a: tuple = (50, 0, 0)
-    x_axis_coil_center_b: tuple = (-50, 0, 0)
+    x_axis_coil_center_a: tuple = (38, 0, 0)
+    x_axis_coil_center_b: tuple = (-38, 0, 0)
 
 
     y_axis_coil_x_length: float = 0
-    y_axis_coil_z_length: float = 100
+    y_axis_coil_z_length: float = 60
     y_axis_coil_corner_radius: float = 18
-    y_axis_coil_winding_number: int = 300
+    y_axis_coil_winding_number: int = 200
     y_axis_coil_current_a: float = -1.5
     y_axis_coil_current_b: float = 1.5
-    y_axis_coil_center_a: tuple = (0, 50, 0)
-    y_axis_coil_center_b: tuple = (0, -50, 0)
+    y_axis_coil_center_a: tuple = (0, 38, 0)
+    y_axis_coil_center_b: tuple = (0, -38, 0)
 
     # z axis coil not used for 2D MOT
     z_axis_coil_x_length: float = 27
@@ -67,12 +67,14 @@ class AqpBookerParameters:
     y_wire_length: float = ((y_axis_coil_x_length + y_axis_coil_z_length)*2 + y_axis_coil_corner_radius*2*np.pi) * y_axis_coil_winding_number /1000 # meters
     z_wire_length: float = ((z_axis_coil_x_length + z_axis_coil_y_length)*2 + z_axis_coil_corner_radius*2*np.pi) * z_axis_coil_winding_number /1000 # meters
 
-    wire_selection: int = 25 # AWG
+    wire_selection: int = 24 # AWG
     wire_diameter: float = 0.127 * (92 ** ((36 - wire_selection)/39)) # mm
     # R = rho * L / A
     x_wire_resistance: float = (1.7241*10**(-8)) * x_wire_length / (np.pi*((wire_diameter/2/1000) ** 2))  # ohm
     y_wire_resistance: float = (1.7241*10**(-8)) * y_wire_length / (np.pi*((wire_diameter/2/1000) ** 2))  # ohm
     z_wire_resistance: float = (1.7241*10**(-8)) * z_wire_length / (np.pi*((wire_diameter/2/1000) ** 2))  # ohm
+
+    wire_weight: float = x_wire_length * np.pi * ((wire_diameter/2000) ** 2) * 8941
 
     # winding_layer_number: int = 3
     # x_axis_coil_thickness: float = x_axis_coil_winding_number * wire_diameter / winding_layer_number
@@ -83,6 +85,9 @@ class AqpBookerParameters:
     x_axis_coil_thickness: float = 20
     y_axis_coil_thickness: float = 20
     z_axis_coil_thickness: float = 20
+
+    position_tolorance: float = 1 # mm
+    angle_tolorance: float = 0.1 # degree
 
 def get_default_aqp_parameters():
     p = AqpBookerParameters()
@@ -215,7 +220,7 @@ def heat_generation(p: AqpBookerParameters = get_default_aqp_parameters()):
             data[i][j] = get_gradient(coll, np.asarray(p.sample_center), 'x')
             if np.abs(data[i][j]) > 15:
                 x_heat_production = p.x_wire_resistance * p.x_axis_coil_current_a**2
-                wire_weight = p.x_wire_length * np.pi * ((p.wire_diameter/2000) ** 2) * 8941
+                wire_weight = p.wire_weight
                 delta_temp = x_heat_production * 1 / 0.385 / (wire_weight * 1000)
                 data_heat[i][j] = delta_temp
     # export the data to csv
@@ -238,7 +243,7 @@ def B_field_plot(p: AqpBookerParameters = get_default_aqp_parameters()):
 
     # plot along x axis
     x_axis_field = []
-    for i in np.linspace(-1 * p.z_axis_coil_x_length/2, p.z_axis_coil_x_length/2, 100):
+    for i in np.linspace(-10 * p.z_axis_coil_x_length/2, 10*p.z_axis_coil_x_length/2, 100):
         B = coll.getB((i, p.x_axis_coil_center_a[1], p.x_axis_coil_center_a[2]))
         x_axis_field.append(np.abs(B[0]))
     ax1.plot(np.linspace(-1 * p.z_axis_coil_x_length/2, p.z_axis_coil_x_length/2, 100), x_axis_field)
@@ -248,7 +253,7 @@ def B_field_plot(p: AqpBookerParameters = get_default_aqp_parameters()):
 
     # plot along y axis
     y_axis_field = []
-    for i in np.linspace(-1 * p.z_axis_coil_y_length/2, p.z_axis_coil_y_length/2, 100):
+    for i in np.linspace(-10 * p.z_axis_coil_y_length/2, 10* p.z_axis_coil_y_length/2, 100):
         B = coll.getB((p.y_axis_coil_center_a[0], i, p.y_axis_coil_center_a[2]))
         y_axis_field.append(np.abs(B[1]))
     ax2.plot(np.linspace(-1 * p.z_axis_coil_y_length/2, p.z_axis_coil_y_length/2, 100), y_axis_field)
@@ -280,17 +285,53 @@ def resistance_sim(p:AqpBookerParameters = get_default_aqp_parameters()):
 
 def heat_sim(p:AqpBookerParameters = get_default_aqp_parameters()):
     x_heat_production = p.x_wire_resistance * p.x_axis_coil_current_a**2
-    print("x coil heat production is", p.x_wire_resistance * p.x_axis_coil_current_a**2, "W")
-    print("y coil heat production is", p.y_wire_resistance * p.y_axis_coil_current_a**2, "W")
-    print("z coil heat production is", p.z_wire_resistance * p.z_axis_coil_current_a**2, "W")
+    print("Each x coil heat production is", p.x_wire_resistance * p.x_axis_coil_current_a**2, "W")
+    print("Each y coil heat production is", p.y_wire_resistance * p.y_axis_coil_current_a**2, "W")
+    # print("z coil heat production is", p.z_wire_resistance * p.z_axis_coil_current_a**2, "W")
     wire_weight = p.x_wire_length * np.pi * ((p.wire_diameter/2000) ** 2) * 8941 # kg
     print("x coil wire weight is", wire_weight, "kg")
     delta_temp = x_heat_production * 1 / 0.385 / (wire_weight * 1000) # assume only 1 second on time
     print("x coil temperature rise is", delta_temp, "K")
+
+def find_lowest_heat_gen(p:AqpBookerParameters = get_default_aqp_parameters()):
+    winding_min = 50
+    winding_max = 300
+    current_min = 0.5
+    current_max = 3.0
+    sample_points = 50
+
+    gradient_limit = 18 # G/cm
+
+    winding_number = np.linspace(winding_min, winding_max, sample_points, dtype=int)
+    current = np.linspace(current_min, current_max, sample_points)
+
+    gradient_list = []
+
+    for i in range(len(winding_number)):
+        for j in range(len(current)):
+            print("calculating: ", winding_number[i], " windings, ", current[j], " A\n")
+            p.x_axis_coil_winding_number = winding_number[i]
+            p.y_axis_coil_winding_number = winding_number[i]
+            p.x_axis_coil_current_a = -1 * current[j]
+            p.x_axis_coil_current_b = current[j]
+            p.y_axis_coil_current_a = -1 * current[j]
+            p.y_axis_coil_current_b = current[j]
+            coll = build_magpy_collection(p)
+            gradient = get_gradient(coll, np.asarray(p.sample_center), 'x')
+            if np.abs(gradient) > gradient_limit:
+                x_heat_production = p.x_wire_resistance * p.x_axis_coil_current_a**2
+                
+                gradient_list.append([winding_number[i], current[j], gradient, x_heat_production])
+                break
+    
+    # export the data to csv
+    np.savetxt("gradient_list_24awg.csv", gradient_list, delimiter=",")
+    print("done")
 
 if __name__ == "__main__":
     resistance_sim()
     heat_sim()
     simulate_mag_field()
     # heat_generation()
-    # B_field_plot()
+    B_field_plot()
+    # find_lowest_heat_gen()
