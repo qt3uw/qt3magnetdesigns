@@ -3,6 +3,11 @@ from dataclasses import dataclass
 import magpylib as magpy
 import matplotlib.pyplot as plt
 import numpy as np
+import random
+import json 
+from concurrent.futures import ProcessPoolExecutor
+import itertools
+import concurrent.futures
 
 @dataclass
 class AqpBookerParameters:
@@ -33,7 +38,7 @@ class AqpBookerParameters:
 
 
     x_axis_coil_y_length: float = 0
-    x_axis_coil_z_length: float = 60
+    x_axis_coil_z_length: float = 57
     x_axis_coil_corner_radius: float = 18
     x_axis_coil_winding_number: int = 200
     x_axis_coil_current_a: float = -1.5
@@ -43,7 +48,7 @@ class AqpBookerParameters:
 
 
     y_axis_coil_x_length: float = 0
-    y_axis_coil_z_length: float = 60
+    y_axis_coil_z_length: float = 57
     y_axis_coil_corner_radius: float = 18
     y_axis_coil_winding_number: int = 200
     y_axis_coil_current_a: float = -1.5
@@ -68,7 +73,8 @@ class AqpBookerParameters:
     z_wire_length: float = ((z_axis_coil_x_length + z_axis_coil_y_length)*2 + z_axis_coil_corner_radius*2*np.pi) * z_axis_coil_winding_number /1000 # meters
 
     wire_selection: int = 24 # AWG
-    wire_diameter: float = 0.127 * (92 ** ((36 - wire_selection)/39)) # mm
+    # wire_diameter: float = 0.127 * (92 ** ((36 - wire_selection)/39)) # mm
+    wire_diameter: float = 0.69 # mm
     # R = rho * L / A
     x_wire_resistance: float = (1.7241*10**(-8)) * x_wire_length / (np.pi*((wire_diameter/2/1000) ** 2))  # ohm
     y_wire_resistance: float = (1.7241*10**(-8)) * y_wire_length / (np.pi*((wire_diameter/2/1000) ** 2))  # ohm
@@ -86,8 +92,8 @@ class AqpBookerParameters:
     y_axis_coil_thickness: float = 20
     z_axis_coil_thickness: float = 20
 
-    position_tolorance: float = 1 # mm
-    angle_tolorance: float = 0.1 # degree
+    position_tolerance: float = 1 # mm
+    angle_tolerance: float = 1 # degree
 
 def get_default_aqp_parameters():
     p = AqpBookerParameters()
@@ -101,7 +107,8 @@ def build_magpy_collection(p: AqpBookerParameters = get_default_aqp_parameters()
     z_axis_coll = magpy.Collection()
     # field_sensor = magpy.Sensor(position=p.sample_center, style_label='field_sensor')
     # coll = magpy.Collection(x_axis_coll, y_axis_coll, z_axis_coll, field_sensor)
-    coll = magpy.Collection(x_axis_coll, y_axis_coll, z_axis_coll)
+    # coll = magpy.Collection(x_axis_coll, y_axis_coll, z_axis_coll)
+    coll = magpy.Collection(x_axis_coll, y_axis_coll)
 
     # sample_number = 1000
     # ts = np.linspace(-1 * p.x_axis_coil_winding_number/2, p.x_axis_coil_winding_number/2, sample_number)
@@ -133,12 +140,12 @@ def build_magpy_collection(p: AqpBookerParameters = get_default_aqp_parameters()
     # z_axis_coil_b = magpy.current.Loop(current = p.z_axis_coil_current_b, diameter=p.z_axis_coil_diameter_b,\
     #                                     position= p.z_axis_coil_center_b, style_label='z_axis_coil_b')
 
-    z_vertices = shape_racetrack(p.z_axis_coil_winding_number, p.z_axis_coil_corner_radius, p.z_axis_coil_x_length, p.z_axis_coil_y_length, p.z_axis_coil_thickness)
-    z_axis_coil_a = magpy.current.Line(current=p.z_axis_coil_current_a, vertices=z_vertices, position=p.z_axis_coil_center_a, style_label='z_axis_coil_a', style_color='m')
-    z_axis_coil_b = magpy.current.Line(current=p.z_axis_coil_current_b, vertices=z_vertices, position=p.z_axis_coil_center_b, style_label='z_axis_coil_b', style_color='c')
-    z_axis_coil_a.rotate_from_angax(90, 'z')
-    z_axis_coil_b.rotate_from_angax(90, 'z')
-    z_axis_coll.add(z_axis_coil_a, z_axis_coil_b)
+    # z_vertices = shape_racetrack(p.z_axis_coil_winding_number, p.z_axis_coil_corner_radius, p.z_axis_coil_x_length, p.z_axis_coil_y_length, p.z_axis_coil_thickness)
+    # z_axis_coil_a = magpy.current.Line(current=p.z_axis_coil_current_a, vertices=z_vertices, position=p.z_axis_coil_center_a, style_label='z_axis_coil_a', style_color='m')
+    # z_axis_coil_b = magpy.current.Line(current=p.z_axis_coil_current_b, vertices=z_vertices, position=p.z_axis_coil_center_b, style_label='z_axis_coil_b', style_color='c')
+    # z_axis_coil_a.rotate_from_angax(90, 'z')
+    # z_axis_coil_b.rotate_from_angax(90, 'z')
+    # z_axis_coll.add(z_axis_coil_a, z_axis_coil_b)
 
     return coll
 
@@ -174,27 +181,38 @@ def shape_racetrack(winding_number, corner_radius, edge_1_length, edge_2_length,
     return vertices
 
 
-def get_gradient(coll: magpy.Collection, location: np.ndarray, direction: str) -> float:
+def get_gradient(coll: magpy.Collection, location: np.ndarray, direction="xyz"):
     
-    diff = 0.05 # mm
+    diff = 0.001 # mm
     B0 = coll.getB(location)
-    if direction == 'x':
+    if direction == "xyz":
         B1 = coll.getB(location + np.array([diff, 0, 0]))
-        gradient = (B1[0] - B0[0])/diff # mT/mm
-    elif direction == 'y':
+        x_gradient = (B1[0] - B0[0])/diff # mT/mm
         B1 = coll.getB(location + np.array([0, diff, 0]))
-        gradient = (B1[1] - B0[1])/diff
-    elif direction == 'z':
+        y_gradient = (B1[1] - B0[1])/diff
         B1 = coll.getB(location + np.array([0, 0, diff]))
-        gradient = (B1[2] - B0[2])/diff
-    else:
-        raise ValueError("direction must be one of 'x', 'y', 'z'")
+        z_gradient = (B1[2] - B0[2])/diff
+
+        gradient = np.array([x_gradient/100, y_gradient/100, z_gradient/100])
+    else: 
+        if direction == 'x':
+            B1 = coll.getB(location + np.array([diff, 0, 0]))
+            gradient = (B1[0] - B0[0])/diff # mT/mm
+        elif direction == 'y':
+            B1 = coll.getB(location + np.array([0, diff, 0]))
+            gradient = (B1[1] - B0[1])/diff
+        elif direction == 'z':
+            B1 = coll.getB(location + np.array([0, 0, diff]))
+            gradient = (B1[2] - B0[2])/diff
+        else:
+            raise ValueError("direction must be one of 'x', 'y', 'z'")
     
-    gradient = gradient * 100 # convert to G/cm
+        gradient = gradient * 100 # convert to G/cm
     if B0 is None or B1 is None:
         raise ValueError("B0 or B1 is None")
 
     return gradient
+
 
 def heat_generation(p: AqpBookerParameters = get_default_aqp_parameters()):
     # heat map for winding number and current
@@ -237,36 +255,37 @@ def heat_generation(p: AqpBookerParameters = get_default_aqp_parameters()):
 
 
     
-def B_field_plot(p: AqpBookerParameters = get_default_aqp_parameters()):
-    coll = build_magpy_collection(p)
+def B_field_plot(p: AqpBookerParameters = get_default_aqp_parameters(), coll: magpy.Collection = None):
+    if coll is None:
+        coll = build_magpy_collection(p)
     fig, (ax1, ax2, ax3) = plt.subplots(3, 1)
 
     # plot along x axis
     x_axis_field = []
-    for i in np.linspace(-10 * p.z_axis_coil_x_length/2, 10*p.z_axis_coil_x_length/2, 100):
+    for i in np.linspace(-1 * p.z_axis_coil_x_length/2, 1*p.z_axis_coil_x_length/2, 100):
         B = coll.getB((i, p.x_axis_coil_center_a[1], p.x_axis_coil_center_a[2]))
         x_axis_field.append(np.abs(B[0]))
-    ax1.plot(np.linspace(-1 * p.z_axis_coil_x_length/2, p.z_axis_coil_x_length/2, 100), x_axis_field)
+    ax1.plot(np.linspace(-1 * p.z_axis_coil_x_length/2, 1*p.z_axis_coil_x_length/2, 100), x_axis_field)
     ax1.set_xlabel('x (mm)')
     ax1.set_ylabel('B (mT)')
     ax1.set_title('B field along x axis')
 
     # plot along y axis
     y_axis_field = []
-    for i in np.linspace(-10 * p.z_axis_coil_y_length/2, 10* p.z_axis_coil_y_length/2, 100):
+    for i in np.linspace(-1 * p.z_axis_coil_y_length/2, 1* p.z_axis_coil_y_length/2, 100):
         B = coll.getB((p.y_axis_coil_center_a[0], i, p.y_axis_coil_center_a[2]))
         y_axis_field.append(np.abs(B[1]))
-    ax2.plot(np.linspace(-1 * p.z_axis_coil_y_length/2, p.z_axis_coil_y_length/2, 100), y_axis_field)
+    ax2.plot(np.linspace(-1 * p.z_axis_coil_y_length/2, 1*p.z_axis_coil_y_length/2, 100), y_axis_field)
     ax2.set_xlabel('y (mm)')
     ax2.set_ylabel('B (mT)')
     ax2.set_title('B field along y axis')
 
     # plot along z axis
     z_axis_field = []
-    for i in np.linspace(-1 * p.x_axis_coil_z_length/2, p.x_axis_coil_z_length/2, 100):
+    for i in np.linspace(-1 * p.x_axis_coil_z_length/2, 1*p.x_axis_coil_z_length/2, 100):
         B = coll.getB((p.z_axis_coil_center_a[0], p.z_axis_coil_center_a[1], i))
         z_axis_field.append(np.abs(B[2]))
-    ax3.plot(np.linspace(-1 * p.x_axis_coil_z_length/2, p.x_axis_coil_z_length/2, 100), z_axis_field)
+    ax3.plot(np.linspace(-1 * p.x_axis_coil_z_length/2, 1*p.x_axis_coil_z_length/2, 100), z_axis_field)
     ax3.set_xlabel('z (mm)')
     ax3.set_ylabel('B (mT)')
     ax3.set_title('B field along z axis')
@@ -328,10 +347,88 @@ def find_lowest_heat_gen(p:AqpBookerParameters = get_default_aqp_parameters()):
     np.savetxt("gradient_list_24awg.csv", gradient_list, delimiter=",")
     print("done")
 
+def find_min_B_field(coll: magpy.Collection):
+    search_range = [-0.5, 0.5] 
+    sample_number = 31
+    x_min = 999
+    y_min = 999
+    z_min = 999
+    x_min_location = (0,0,0)
+    y_min_location = (0,0,0)
+    z_min_location = (0,0,0)
+    for i in np.linspace(search_range[0], search_range[1], sample_number):
+        for j in np.linspace(search_range[0], search_range[1], sample_number):
+            for k in np.linspace(search_range[0], search_range[1], sample_number):
+                B = coll.getB((i, j, k))
+                if np.abs(B[0]) < np.abs(x_min):
+                    x_min = B[0]
+                    x_min_location = (i, j, k)
+                if np.abs(B[1]) < np.abs(y_min):
+                    y_min = B[1]
+                    y_min_location = (i, j, k)
+                if np.abs(B[2]) < np.abs(z_min):
+                    z_min = B[2]
+                    z_min_location = (i, j, k)
+    print("x min is", x_min, "at", x_min_location)
+    print("y min is", y_min, "at", y_min_location)
+    print("z min is", z_min, "at", z_min_location)
+    return {"x_min": x_min, "y_min": y_min, "z_min": z_min, "x_min_location": x_min_location, "y_min_location": y_min_location, "z_min_location": z_min_location}
+    
+
+
+def run_simulation(comb, p:AqpBookerParameters = get_default_aqp_parameters()):
+    # Assuming repetition is allowed for demonstration
+    
+    coll = build_magpy_collection(p)
+    coll.children[0][0].rotate_from_angax(comb[1][0]*p.angle_tolerance, comb[0][0])
+    coll.children[0][1].rotate_from_angax(comb[1][1]*p.angle_tolerance, comb[0][1])
+    coll.children[1][0].rotate_from_angax(comb[1][2]*p.angle_tolerance, comb[0][2])
+    coll.children[1][1].rotate_from_angax(comb[1][3]*p.angle_tolerance, comb[0][3])
+
+    result = find_min_B_field(coll)
+    
+    return {
+        "directions": comb[0],
+        "sides": comb[1],
+        "result": result
+    }
+
+
+def error_sim_parallel(p:AqpBookerParameters = get_default_aqp_parameters()):
+    directions = ['x', 'y', 'z']
+    sides = [-1, 1]
+
+    # Generate all possible combinations of directions and sides
+    direction_combinations = list(itertools.product(directions, repeat=4))  # repeat=4 for direction_1 through direction_4
+    side_combinations = list(itertools.product(sides, repeat=4))  # repeat=2 for side_1 and side_2
+    final_combinations = list(itertools.product(direction_combinations, side_combinations))
+
+    
+    results = []
+    with ProcessPoolExecutor() as executor:
+        futures = [executor.submit(run_simulation, comb, p) for comb in final_combinations]
+        for future in concurrent.futures.as_completed(futures):
+            results.append(future.result())
+
+    # Write results to file
+    with open("error_sim_result.txt", "w") as f:
+        for result in results:
+            f.write(json.dumps(result) + "\n")
+
+    print("Simulation completed.")
+
+
+        
+    
+
+
+    
+
 if __name__ == "__main__":
     resistance_sim()
-    heat_sim()
+    # heat_sim()
     simulate_mag_field()
     # heat_generation()
-    B_field_plot()
+    # B_field_plot()
     # find_lowest_heat_gen()
+    # error_sim_parallel(get_default_aqp_parameters())
